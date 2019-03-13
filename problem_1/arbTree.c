@@ -17,7 +17,9 @@ struct tree_node
 };
 
 const char *HELP_MESSAGE =
-    "%s tree_input_file.txt file_2\n";
+    "Error with arguments.\n"
+    "Must be formatted: "
+    "%s input.txt\n";
 
 char *ReadFileContents(int f)
 {
@@ -60,10 +62,9 @@ void print_tree (struct tree_node *root)
 
 }
 
-int main(char argc, char *argv[])
+int main(int argc, char *argv[])
 {
-
-    if (argc < 1) {
+    if (argc != 2) {
         printf(HELP_MESSAGE, argv[0]);
         return 0;
     }
