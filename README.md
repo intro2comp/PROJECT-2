@@ -13,3 +13,16 @@ Andrew Sengupta - ans165 - ans165@scarletmail.rutgers.edu
 Michael Truong - mt842 - mt842@scarletmail.rutgers.edu
 
 ## Instructions
+
+### Problem \#1
+
+```
+cd problem_1
+make
+```
+
+A test can be run using:
+
+```
+make test
+```
