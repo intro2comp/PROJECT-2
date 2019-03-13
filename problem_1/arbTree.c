@@ -7,8 +7,14 @@
 #include <stdlib.h>  // exit
 #include <string.h>  // strlen
 
+#include <ctype.h> // isdigit()
 
 const int BUFFER_SIZE = 256;
+
+const char *HELP_MESSAGE =
+    "Error with arguments.\n"
+    "Must be formatted: "
+    "%s input.txt\n";
 
 struct tree_node
 {
@@ -16,18 +22,19 @@ struct tree_node
     int children_no;
 };
 
-const char *HELP_MESSAGE =
-    "Error with arguments.\n"
-    "Must be formatted: "
-    "%s input.txt\n";
-
 char *ReadFileContents(int f)
+/* Read contents from a file descriptor *f* into a heap allocated
+ * string *buffer*
+ */
 {
     char c;
     int buffer_index = 0;
 
+    // Allocate BUFFER_SIZE bytes on the heap
     char *buffer = malloc(BUFFER_SIZE * sizeof(char));
 
+    // read returns 0 when there is no more to read
+    // If the result is zero (false) break the loop
     while (read(f, &c, 1))
         buffer[buffer_index++] = c;
 
@@ -36,7 +43,27 @@ char *ReadFileContents(int f)
     return buffer;
 }
 
+void parse_tree_file (char *buff)
+{
+    char *p = buff;
+
+    while (*p) { // While there are more characters to process...
+        if ( isdigit(*p) || ( (*p=='-'||*p=='+') && isdigit(*(p+1)) )) {
+            // Found a number
+            long val = strtol(p, &p, 10); // Read number
+            printf("%ld\n", val); // and print it.
+        } else {
+            // Otherwise, move on to the next character.
+            p++;
+        }
+    }
+}
+
 void read_tree_file (const char *filename)
+/* Reads data in file named *filename* to char cont for parsing.
+ * If the requested file cannot be opened, then the function
+ * simply returns
+ */
 {
     int fdin;
 
@@ -52,9 +79,9 @@ void read_tree_file (const char *filename)
     cont = ReadFileContents(fdin);
 
     close(fdin);
-
     printf("%s\n", cont);
 
+    parse_tree_file(cont);
 }
 
 void print_tree (struct tree_node *root)
@@ -64,6 +91,7 @@ void print_tree (struct tree_node *root)
 
 int main(int argc, char *argv[])
 {
+    // Guard for invalid input
     if (argc != 2) {
         printf(HELP_MESSAGE, argv[0]);
         return 0;
