@@ -19,7 +19,10 @@ const char *HELP_MESSAGE =
 struct tree_node
 {
     pid_t pid;
-    int children_no;
+    int children_no; // Number of Children
+    char node_name; // Name of Node
+
+    struct tree_node *child; // Tree node pointer to child(ren)
 };
 
 char *ReadFileContents(int f)
@@ -48,12 +51,13 @@ void parse_tree_file (char *buff)
     char *p = buff;
 
     while (*p) { // While there are more characters to process...
+
         if ( isdigit(*p) || ( (*p=='-'||*p=='+') && isdigit(*(p+1)) )) {
-            // Found a number
-            long val = strtol(p, &p, 10); // Read number
-            printf("%ld\n", val); // and print it.
+            // Found a number (no. of children)
+            int val = strtol(p, &p, 10); // Read number
+            printf("%d\n", val);
         } else {
-            // Otherwise, move on to the next character.
+            // Otherwise, found a character (parent name or child(ren) name)
             p++;
         }
     }
