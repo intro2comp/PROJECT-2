@@ -7,7 +7,12 @@
 #include <stdlib.h>  // exit
 #include <string.h>  // strlen
 
-#include <ctype.h> // isdigit()
+#include <ctype.h> // isdigit(), isspace()
+#include <stdbool.h> // bool
+
+#include "parser.h" // for parse_tree_file()
+
+#define EXIT_FAILURE 1
 
 const int BUFFER_SIZE = 256;
 
@@ -20,9 +25,9 @@ struct tree_node
 {
     pid_t pid;
     int children_no; // Number of Children
-    char node_name; // Name of Node
+    char name; // Name of Node
 
-    struct tree_node *child; // Tree node pointer to child(ren)
+    struct tree_node **child; // Tree node array of pointers to child(ren)
 };
 
 char *ReadFileContents(int f)
@@ -46,21 +51,57 @@ char *ReadFileContents(int f)
     return buffer;
 }
 
-void parse_tree_file (char *buff)
+void print_tokens (Token **tokens, int count)
 {
-    char *p = buff;
-
-    while (*p) { // While there are more characters to process...
-
-        if ( isdigit(*p) || ( (*p=='-'||*p=='+') && isdigit(*(p+1)) )) {
-            // Found a number (no. of children)
-            int val = strtol(p, &p, 10); // Read number
-            printf("%d\n", val);
-        } else {
-            // Otherwise, found a character (parent name or child(ren) name)
-            p++;
-        }
+    for (int i = 0; i < count; i++) {
+        printf("Token: %c   Type: %d\n", tokens[i]->value, tokens[i]->type);
     }
+}
+
+void parse_tree_file (char *str)
+{
+    Token **tokens = malloc(BUFFER_SIZE * sizeof(Token*));
+
+    int length = strlen(str);
+    bool firstLetter = true;
+
+    for (int i = 0; i < BUFFER_SIZE; i++)
+        tokens[i] = malloc(sizeof(Token));
+
+    int token_count = 0;
+
+    for (int i = 0; i < length; i++) {
+
+        if(firstLetter) { // Get Parent Node Name
+            tokens[token_count]->type = PARENT;
+            tokens[token_count++]->value = str[i];
+            firstLetter = false;
+        }
+
+        else if(isdigit(str[i])) { // Get Number of Child Processes
+            int value = str[i] - 48;
+
+            tokens[token_count]->type = COUNT;
+            tokens[token_count++]->value = value;
+        }
+
+        else if(!firstLetter) { // Get Child Process Names
+            for (int j = i; j < j + tokens[token_count-1]->value; j++) {
+
+                if (str[j] != ' '){
+                    tokens[token_count]->type = CHILD;
+                    tokens[token_count++]->value = str[j];
+                }
+                i++;
+            }
+
+            firstLetter = true;
+        }
+
+        else return;
+    }
+
+    print_tokens (tokens, token_count);
 }
 
 void read_tree_file (const char *filename)
