@@ -10,6 +10,7 @@ typedef enum {
 typedef struct {
   TokenType type;
   int value;
+  char name;
 } Token;
 
 #endif
