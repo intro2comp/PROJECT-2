@@ -102,6 +102,7 @@ Token **parse_expression(Token **tokens)
       case MULTIPLICATION:
         stack_push(operator_stack, token_index);
         break;
+      case OPEN_BRACKET:
       case OPEN_PAREN:
         stack_push(operator_stack, token_index);
         break;
@@ -109,6 +110,12 @@ Token **parse_expression(Token **tokens)
         while (!stack_is_empty(operator_stack) && tokens[stack_peek(operator_stack)]->type != OPEN_PAREN)
           queue_push(output_queue, stack_pop(operator_stack));
         if (!stack_is_empty(operator_stack) && tokens[stack_peek(operator_stack)]->type == OPEN_PAREN)
+          stack_pop(operator_stack);
+        break;
+      case CLOSE_BRACKET:
+        while (!stack_is_empty(operator_stack) && tokens[stack_peek(operator_stack)]->type != OPEN_BRACKET)
+          queue_push(output_queue, stack_pop(operator_stack));
+        if (!stack_is_empty(operator_stack) && tokens[stack_peek(operator_stack)]->type == OPEN_BRACKET)
           stack_pop(operator_stack);
         break;
       default:

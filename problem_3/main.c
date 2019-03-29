@@ -14,7 +14,7 @@ void print_token(Token *token)
 {
   switch (token->type) {
     case NUMBER:
-      printf("[%d]", token->value);
+      printf("|%d|", token->value);
       break;
     case ADDITION:
       printf("+");
@@ -22,8 +22,14 @@ void print_token(Token *token)
     case MULTIPLICATION:
       printf("x");
       break;
+    case OPEN_BRACKET:
+      printf("[");
+      break;
     case OPEN_PAREN:
       printf("(");
+      break;
+    case CLOSE_BRACKET:
+      printf("]");
       break;
     case CLOSE_PAREN:
       printf(")");
@@ -137,9 +143,7 @@ int parallel_evaluate_node(Node *node)
 
     close(pipefd[0]);
 
-    printf("%d, %d\n", left_val, right_val);
-
-    int res;
+    int res;  // Where the result is stored
 
     if (op == OP_ADD)
       res = left_val + right_val;
@@ -179,6 +183,15 @@ int parallel_evaluate_node(Node *node)
 
     close(pipefd[0]);
 
+    char op_char;
+
+    if (node->value.op == OP_ADD)
+      op_char = '+';
+    else
+      op_char = 'x';
+
+    printf("%d %c %d = %d\n", left_value, op_char, right_value, result);
+
     return result;
   }
 }
@@ -187,7 +200,8 @@ int parallel_evaluate_node(Node *node)
 int main()
 {
   // An example expression string to be processed
-  char *test_str = "2 x (5 + 2) x (100 x (3 + 4))";
+  // This string has an unmatched opening brace, but still works!
+  char *test_str = "10 x [(2x(5+6)) +(3x(2+3))]x [[(4x (8+5)) + (5x (2+4))]";
 
   // Read the input into an array of tokens
   Token **tokens = tokenize_input(test_str);
@@ -198,8 +212,6 @@ int main()
   // Convert the postfix tokens into an operation tree
   Node *tree = create_operation_tree(postfix_tokens);
 
-  int result = parallel_evaluate_node(tree);
-
   // Print everything out nice and pretty
   printf("Infix tokens: ");
   print_token_array(tokens);
@@ -209,6 +221,10 @@ int main()
 
   printf("\nOperation Tree:\n");
   print_tree(tree);
+
+  printf("\n");
+
+  int result = parallel_evaluate_node(tree);
 
   printf("\nResult: %d\n", result);
 
