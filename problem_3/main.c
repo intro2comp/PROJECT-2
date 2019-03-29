@@ -1,4 +1,9 @@
+#include <unistd.h>
 #include <stdio.h>
+#include <stdlib.h>
+
+#include <sys/types.h>
+#include <sys/wait.h>
 
 #include "parser.h"
 #include "tree.h"
@@ -80,10 +85,109 @@ void print_tree(Node* root)
 }
 
 
+int evaluate_node(Node *node)
+{
+  int left_value, right_value;
+
+  if (node->left->type == OPERATION)
+    left_value = evaluate_node(node->left);
+  else
+    left_value = node->left->value.num;
+
+  if (node->right->type == OPERATION)
+    right_value = evaluate_node(node->right);
+  else
+    right_value = node->right->value.num;
+
+  int result;
+
+  if (node->value.op == OP_ADD)
+    result = left_value + right_value;
+  else
+    result = left_value * right_value;
+
+  return result;
+}
+
+
+int parallel_evaluate_node(Node *node)
+{
+  int pipefd[2];
+  pid_t pid;
+
+  if (pipe(pipefd) == -1) {
+    perror("pipe");
+    _exit(EXIT_FAILURE);
+  }
+
+  pid = fork();
+
+  if (pid == -1) {
+    perror("fork");
+    _exit(EXIT_FAILURE);
+  }
+
+  if (pid == 0) { // Child process
+    int left_val, right_val;
+    Operation op;
+
+    read(pipefd[0], &left_val, sizeof(int));
+    read(pipefd[0], &right_val, sizeof(int));
+    read(pipefd[0], &op, sizeof(Operation));
+
+    close(pipefd[0]);
+
+    printf("%d, %d\n", left_val, right_val);
+
+    int res;
+
+    if (op == OP_ADD)
+      res = left_val + right_val;
+    else
+      res = left_val * right_val;
+
+    write(pipefd[1], &res, sizeof(int));
+
+    close(pipefd[1]);
+
+    _exit(EXIT_SUCCESS);
+  } else {  // Parent process
+    int left_value, right_value;
+
+    if (node->left->type == OPERATION)
+      left_value = parallel_evaluate_node(node->left);
+    else
+      left_value = node->left->value.num;
+
+    if (node->right->type == OPERATION)
+      right_value = parallel_evaluate_node(node->right);
+    else
+      right_value = node->right->value.num;
+
+    write(pipefd[1], &left_value, sizeof(int));
+    write(pipefd[1], &right_value, sizeof(int));
+    // Write operation to be computed to pipe
+    write(pipefd[1], &node->value.op, sizeof(Operation));
+
+    close(pipefd[1]);
+
+    wait(NULL);
+
+    int result;
+
+    read(pipefd[0], &result, sizeof(int));
+
+    close(pipefd[0]);
+
+    return result;
+  }
+}
+
+
 int main()
 {
   // An example expression string to be processed
-  char *test_str = "(5 + 2) x (100 x (3 + 4))";
+  char *test_str = "2 x (5 + 2) x (100 x (3 + 4))";
 
   // Read the input into an array of tokens
   Token **tokens = tokenize_input(test_str);
@@ -94,6 +198,8 @@ int main()
   // Convert the postfix tokens into an operation tree
   Node *tree = create_operation_tree(postfix_tokens);
 
+  int result = parallel_evaluate_node(tree);
+
   // Print everything out nice and pretty
   printf("Infix tokens: ");
   print_token_array(tokens);
@@ -103,6 +209,8 @@ int main()
 
   printf("\nOperation Tree:\n");
   print_tree(tree);
+
+  printf("\nResult: %d\n", result);
 
   return 0;
 }
