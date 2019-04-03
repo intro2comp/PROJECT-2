@@ -1,14 +1,15 @@
 #include <sys/stat.h>
-#include <fcntl.h>    // close, open
+#include <sys/types.h>
 
-#include <unistd.h>  // read, write
+#include <fcntl.h>
+#include <unistd.h>
 
-#include <stdio.h>   // printf
-#include <stdlib.h>  // exit
-#include <string.h>  // strlen
+#include <stdio.h>
+#include <stdlib.h>
+#include <stdbool.h>
 
-#include <ctype.h> // isdigit(), isspace()
-#include <stdbool.h> // bool
+#include <string.h>
+#include <ctype.h>
 
 #include "parser.h" // for parse_tree_file()
 
@@ -186,11 +187,55 @@ char *read_tree_file(const char *filename)
     return cont;
 }
 
-void create_tree()
+struct tree_node *create_tree(Token **tokens)
 {
+    char *nameArr = malloc(sizeof(char) * BUFFER_SIZE);
+    struct tree_node **nodeArr = malloc(sizeof(struct tree_node*) * BUFFER_SIZE);
+
+    int index = 0;
+    int counter = 0;
+    int current = 0;
+
+    for (int i = 0; i < BUFFER_SIZE; i++) {
+        nodeArr[i] = malloc(sizeof(struct tree_node));
+        nodeArr[i] = NULL;
+    }
+
+    for (int i = 0; i < token_count; i++) {
+
+        token = tokens[i];
+
+        switch (token->type) {
+        case PARENT: {
+
+            struct tree_node *temp = NULL;
+
+            for (int j = 0; j < current; j++) {
+                if (token->name == nodeArr[j]) {
+                    temp = token;
+                    break;
+                }
+            }
+
+            nodeArr[index] = malloc(sizeof(struct tree_node));
+            nodeArr[index++]->name = token->name;
+            break;
+        }
+        case COUNT:
+            nodeArr[counter]->children_no = token->value;
+            break;
+
+        case CHILD:
+            nodeArr[counter]->child = token->name;
+            break;
+
+        default:
+            break;
+        }
+    }
 }
 
-void print_tree()
+void print_tree(struct tree_node *root)
 {
     printf("====================\n"
             "TREE CREATED:\n"
@@ -208,4 +253,8 @@ int main(int argc, char *argv[])
     Token **tokens = parse_tree_file(read_tree_file(argv[1]));
 
     print_tokens(tokens);
+
+    struct tree_node *root = create_tree(tokens);
+
+    print_tree(root);
 }
