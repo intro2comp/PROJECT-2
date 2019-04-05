@@ -11,53 +11,19 @@
 #include <string.h>
 #include <ctype.h>
 
-#include "parser.h" // for parse_tree_file()
+#define KRED  "\x1B[31m" // RED Text Color
+#define RESET  "\x1B[0m" // DEFAULT Text Color
 
-const int BUFFER_SIZE = 256;
-const char *HELP_MESSAGE =
-    "Error with arguments.\n"
-    "Must be formatted: "
-    "%s input.txt\n";
+#define BUFFER_SIZE 256
 
-int token_count;
-
-struct tree_node
+typedef struct tree_node
 {
-    char name; // Name of Node
-    int children_no; // Number of Children
-    pid_t pid; // Process ID
-    struct tree_node **child; // Tree node array of pointers to child(ren)
-};
+    char name;
+    int children_no;                // Number of Children
+    pid_t pid;                      // Process ID
+    struct tree_node **children;    // Tree node array of pointers to children
+} tree_node;
 
-void print_tokens(Token **tokens)
-{
-    Token *token = tokens[0];
-
-    printf("====================\n"
-            "TOKENS CREATED:\n"
-            "--------------------\n");
-
-    for(int i = 0; i < token_count; i++) {
-
-        token = tokens[i];
-
-        switch (token->type) {
-        case PARENT:
-            printf("\nPARENT: %c\n", token->name);
-            break;
-        case COUNT:
-            printf("COUNT:  %d\n", token->value);
-            break;
-        case CHILD:
-            printf("CHILD:  %c\n", token->name);
-            break;
-        default:
-            break;
-        }
-    }
-
-    printf("\n");
-}
 
 char *ReadFileContents(int f)
 /* Read contents from a file descriptor *f* into a heap allocated
@@ -80,181 +46,177 @@ char *ReadFileContents(int f)
     return buffer;
 }
 
-Token **parse_tree_file(char *str)
-/* Takes character array and stores into tokens for tree building.
- * Includes formatting error detection for incorrect input files.
+
+int findChar(char c, char *arr) 
+/* Find character from array of names. Returns index if found.
+ * Otherwise, returns -1.
  */
-{
-    Token **tokens = malloc(BUFFER_SIZE * sizeof(Token*));
+{  
+    int i = 0;
 
-    int length = strlen(str);
-    bool firstLetter = true;
-
-    for (int i = 0; i < BUFFER_SIZE; i++)
-        tokens[i] = malloc(sizeof(Token));
-
-    token_count = 0;
-    int value = -1;
-
-    for (int i = 0; i < length; i++) {
-
-        if(str[i] == ' ' || str[i] == '\n') {} //Skip spaces or newlines
-
-        else if(firstLetter) { // Get Parent Node Name
-
-            if(isdigit(str[i]) || isalpha(str[i+1])) {
-                printf("Input file formatting error. PARENT must have ONE CHAR name.\n\n");
-                exit(EXIT_FAILURE);
-            }
-
-            tokens[token_count]->type = PARENT;
-            tokens[token_count++]->name = str[i];
-            firstLetter = false;
-        }
-
-        else if(isdigit(str[i])) { // Get Number of Child Processes
-
-            if(isdigit(str[i+1]) || value != -1) {
-                printf("Input file formatting error. NUMBER of child processes limited from 0-9.\n\n");
-                exit(EXIT_FAILURE);
-            }
-
-            value = str[i] - '0';
-
-            tokens[token_count]->type = COUNT;
-            tokens[token_count++]->value = value;
-        }
-
-        else if(!firstLetter) { // Get Child Process Names
-
-            while (value) {
-
-                if(str[i] == ' ' || str[i] == '\n') {} //Skip spaces or newlines
-
-                else {
-
-                    if(isdigit(str[i]) || isalpha(str[i+1])) {
-                        printf("Input file formatting error. CHILD must have ONE CHAR name.\n\n");
-                        exit(EXIT_FAILURE);
-                    }
-
-                    tokens[token_count]->type = CHILD;
-                    tokens[token_count++]->name = str[i];
-                    value--;
-                }
-
-                i++;
-            }
-
-            if (str[i] == ' ') {
-                printf("Input file formatting error. Number of children exceeded input.\n\n");
-                exit(EXIT_FAILURE);
-            }
-
-            value = -1;
-            firstLetter = true;
-        }
+    while (arr[i] != '\0') {
+        if (arr[i] == c)
+            return i;
+        else i++;
     }
 
-    return tokens;
+    return -1;
 }
 
-char *read_tree_file(const char *filename)
-/* Reads data in file named *filename* to char cont for parsing.
- * If the requested file cannot be opened, then the function
- * simply returns
- */
+
+int charToInt(char c)
+/* Convert character to integer */
 {
-    int fdin;
+    char s[2];
+    s[0] = c;
+    s[1] = '\0';
 
-    fdin = open(filename, O_RDONLY);
-
-    if (fdin == -1) {
-        printf("Could not open file '%s'\n", filename);
-        exit(EXIT_FAILURE);
-    }
-
-    char *cont;
-    cont = ReadFileContents(fdin);
-
-    close(fdin);
-
-    printf("\n====================\n"
-            "GIVEN INPUT FILE:\n"
-            "--------------------\n\n");
-    printf("%s\n", cont);
-
-    return cont;
+    return atoi(s);
 }
 
-struct tree_node *create_tree(Token **tokens)
-{
-    char *nameArr = malloc(sizeof(char) * BUFFER_SIZE);
-    struct tree_node **nodeArr = malloc(sizeof(struct tree_node*) * BUFFER_SIZE);
 
-    int index = 0;
-    int counter = 0;
-    int current = 0;
+tree_node *parse_tree_string(char *str)
+/* Parse input data and store values into defined tree structure */
+{
+    tree_node **nodes = malloc(BUFFER_SIZE * sizeof(tree_node*));
+    char *names = malloc(BUFFER_SIZE * sizeof(char));
 
     for (int i = 0; i < BUFFER_SIZE; i++) {
-        nodeArr[i] = malloc(sizeof(struct tree_node));
-        nodeArr[i] = NULL;
-    }
+        nodes[i] = NULL;
+        names[i] = '\0';
+    }     
 
-    for (int i = 0; i < token_count; i++) {
+    int node_count = 0;
 
-        token = tokens[i];
+    char *current_char = str;
 
-        switch (token->type) {
-        case PARENT: {
+    int child_count;
 
-            struct tree_node *temp = NULL;
+    while (*current_char != '\0') {
+        tree_node *current_node;
+        
+        if (!isalpha(*current_char)) { // Parent name error handler
+            fprintf(stderr, KRED "Invalid parent node name in input!\n" RESET);
+            exit(EXIT_FAILURE);
+        }
 
-            for (int j = 0; j < current; j++) {
-                if (token->name == nodeArr[j]) {
-                    temp = token;
-                    break;
-                }
+        // Get parent name
+        int name_index = findChar(*current_char, names);
+
+        if (name_index == -1) {
+            current_node = malloc(sizeof(tree_node));
+            nodes[node_count] = current_node;
+            names[node_count++] = *current_char;
+        } else
+            current_node = nodes[name_index];
+
+        current_node->name = *(current_char++);
+
+        if (*current_char != 32) { // Space after parent name error handler
+            fprintf(stderr, KRED "Missing space after name! Found '%c'\n" RESET, *current_char);
+            exit(EXIT_FAILURE);
+        }
+
+        current_char++; // Skip space after parent name
+
+        if (!isdigit(*current_char)) { // Children number error handler
+            fprintf(stderr, KRED "Invalid children number in input!\n" RESET);
+            exit(EXIT_FAILURE);
+        }
+
+        // Get child count
+        child_count = charToInt(*(current_char++));
+        current_node->children_no = child_count;
+        
+        // Guard for no children
+        if (!child_count) {
+            current_node->children = NULL;
+            current_char++;
+            continue;
+        }
+
+        if (*current_char != ' ') { // Space after children number error handler
+            fprintf(stderr, KRED "Missing space after children number! Found '%i'\n" RESET, *current_char);
+            exit(EXIT_FAILURE);
+        }
+
+        current_char++; // Skip space after children number
+
+        current_node->children = malloc(sizeof(tree_node*) * child_count);
+
+        // Get children names
+        for (int i = 0; i < child_count; i++) {
+
+            if (!isalpha(*current_char)) { // Child name error handler
+                fprintf(stderr, KRED "Invalid child node name in input!\n" RESET);
+                exit(EXIT_FAILURE);
             }
 
-            nodeArr[index] = malloc(sizeof(struct tree_node));
-            nodeArr[index++]->name = token->name;
-            break;
+            int name_index = findChar(*current_char, names); // Search if child name already exists
+
+            if (name_index == -1) {
+                tree_node *child_node = malloc(sizeof(tree_node));
+                child_node->name = *current_char;
+                nodes[node_count] = child_node;
+                names[node_count++] = *(current_char++);
+                current_node->children[i] = child_node;
+            } else {
+                current_node->children[i] = nodes[name_index];
+                current_char++;
+            }
+
+
+            if (*current_char == ' ')
+                current_char++;
+            else if (i == child_count - 1)
+                ;
+            else {
+                fprintf(stderr, KRED "Missing space after child name! Found '%i'\n" RESET, *current_char);
+                exit(EXIT_FAILURE);
+            }
         }
-        case COUNT:
-            nodeArr[counter]->children_no = token->value;
-            break;
 
-        case CHILD:
-            nodeArr[counter]->child = token->name;
-            break;
-
-        default:
-            break;
+        if (*current_char == '\n')
+            current_char++;
+        else if (*current_char == '\0')
+            continue;
+        else {
+            fprintf(stderr, KRED "Invalid line ending! Found '%i'\n" RESET, *current_char);
+            exit(EXIT_FAILURE);
         }
     }
+
+    return nodes[0];
 }
 
-void print_tree(struct tree_node *root)
-{
-    printf("====================\n"
-            "TREE CREATED:\n"
-            "--------------------\n");
+void print_node(tree_node *node) {
+    printf("Parent: '%c'\n", node->name);
+
+    printf("Children:");
+
+    for (int i = 0; i < node->children_no; i++)
+        printf(" '%c'", node->children[i]->name);
+
+    printf("\n\n");
+
+    for (int i = 0; i < node->children_no; i++)
+        print_node(node->children[i]);
 }
 
 int main(int argc, char *argv[])
 {
     // Guard for invalid input arguments
     if (argc != 2) {
-        printf(HELP_MESSAGE, argv[0]);
+        fprintf(stderr, KRED "Error with arguments.\n"
+            "Must be formatted: %s input.txt\n" RESET, argv[0]);
         return 0;
     }
 
-    Token **tokens = parse_tree_file(read_tree_file(argv[1]));
+    int input_fd = open(argv[1], O_RDONLY);
 
-    print_tokens(tokens);
+    char *input_string = ReadFileContents(input_fd);
 
-    struct tree_node *root = create_tree(tokens);
+    tree_node *root = parse_tree_string(input_string);
 
-    print_tree(root);
+    print_node(root);
 }

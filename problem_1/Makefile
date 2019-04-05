@@ -1,10 +1,10 @@
 CC = gcc
 CFLAGS = -std=c99 -g -Wall -Wextra -Wpedantic
 
-arbTree: arbTree.c
+tree: arbTree.c
 	$(CC) $(CFLAGS) -o tree arbTree.c
 
-all:
+all: tree
 
 test:
 	./tree input.txt
