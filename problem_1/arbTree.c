@@ -1,14 +1,14 @@
 #include <sys/stat.h>
 #include <sys/wait.h>
-#include <sys/ipc.h> 
-#include <sys/shm.h> 
+#include <sys/ipc.h>
+#include <sys/shm.h>
 #include <sys/types.h>  // pid_t
 
 #include <fcntl.h>
 #include <unistd.h>     // fork(), pipe()
 
-#include <stdio.h>      // exit(), fprintf(), printf(), stderr 
-#include <stdlib.h>     // malloc(), free(), 
+#include <stdio.h>      // exit(), fprintf(), printf(), stderr
+#include <stdlib.h>     // malloc(), free(),
 #include <stdbool.h>    // bool
 
 #include <string.h>     // strlen()
@@ -213,7 +213,7 @@ void print_node(tree_node *node) {
 void create_process_tree(tree_node *node) {
 
     printf("Node '%c' has pid '%d'\n", node->name, getpid());
-    
+
     pid_t pid;
 
     for (int i = 0; i < node->children_no; i++) {
@@ -221,7 +221,7 @@ void create_process_tree(tree_node *node) {
         pid = fork();
 
         if (pid == 0) {
-            printf("child process '%c' with pid '%d'\n", child->name, getpid());
+            printf("Child process '%c' with PID '%d'\n", child->name, getpid());
             create_process_tree(child);
             exit(0);
         } else if (pid > 0) {
@@ -241,13 +241,13 @@ void create_process_tree(tree_node *node) {
         } else if (pid == -1) {
             perror("waitpid");
         } else if (WIFEXITED(status)) {
-            printf("%d exited, status=%d\n", pid, WEXITSTATUS(status));
+            printf("'%d' exited, status=%d\n", pid, WEXITSTATUS(status));
         } else if (WIFSIGNALED(status)) {
-            printf("%d killed by signal %d\n", pid, WTERMSIG(status));
+            printf("'%d' killed by signal %d\n", pid, WTERMSIG(status));
         } else if (WIFSTOPPED(status)) {
-            printf("%d stopped by signal %d\n", pid, WSTOPSIG(status));
+            printf("'%d' stopped by signal %d\n", pid, WSTOPSIG(status));
         } else if (WIFCONTINUED(status)) {
-            printf("%d continued\n", pid);
+            printf("'%d' continued\n", pid);
         }
     }
 }
@@ -271,7 +271,11 @@ int main(int argc, char *argv[])
     // Parse the tree into a data structure
     tree_node *root = parse_tree_string(input_string);
 
+    printf("\nData Structure From Input:\n"
+            "========================\n");
     print_node(root);
 
+    printf("\nProcess Tree Creation:\n"
+            "========================\n");
     create_process_tree(root);
 }
