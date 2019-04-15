@@ -24,5 +24,32 @@ make
 A test can be run using:
 
 ```
-make test
+./tree input.txt
+```
+
+### Problem \#2
+
+```
+cd problem_1
+make
+```
+
+A test can be run using:
+
+```
+
+```
+
+
+### Problem \#3
+
+```
+cd problem_1
+make
+```
+
+A test can be run using:
+
+```
+
 ```
