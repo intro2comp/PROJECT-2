@@ -197,11 +197,15 @@ int parallel_evaluate_node(Node *node)
 }
 
 
-int main()
+int main(int argc, char **argv)
 {
-  // An example expression string to be processed
+  if (argc != 2) {
+    fprintf(stderr, "Usage: %s EQ_STR", argv[0]);
+    exit(EXIT_FAILURE);
+  }
+
   // This string has an unmatched opening brace, but still works!
-  char *test_str = "10 x [(2x(5+6)) +(3x(2+3))]x [[(4x (8+5)) + (5x (2+4))]";
+  char *test_str = argv[1];
 
   // Read the input into an array of tokens
   Token **tokens = tokenize_input(test_str);
