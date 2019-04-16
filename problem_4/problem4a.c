@@ -1,11 +1,11 @@
 #include <stdio.h>
-#include <string.h>
 #include <stdlib.h>
+#include <limits.h>
 #include <unistd.h>
 #include <dirent.h>
 #include <sys/wait.h>
 #include <ctype.h>
-#include <limits.h>
+#include <string.h>
 
 typedef enum { false, true } bool;
 
