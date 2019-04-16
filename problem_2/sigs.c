@@ -12,7 +12,6 @@
 
 #define KRED  "\x1B[31m" // RED Text Color
 #define RESET  "\x1B[0m" // DEFAULT Text Color
-
 #define BUFFER_SIZE 256
 
 void wait_for_children();
@@ -286,7 +285,6 @@ void explain_wait_status(pid_t pid, int status)
     else if (WIFSTOPPED(status))
     {
         printf("Child with PID = %ld has been stopped by a signal, signo = %d\n", (long)pid, WSTOPSIG(status));
-        exit(17);
         fflush(stdout);
     }
     else {
