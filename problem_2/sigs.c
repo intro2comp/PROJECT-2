@@ -165,7 +165,6 @@ tree_node *parse_tree_string(char *str)
                 current_char++;
             }
 
-
             if (*current_char == ' ')
                 current_char++;
             else if (i == child_count - 1)
@@ -207,7 +206,7 @@ void print_node(tree_node *node) {
 void create_process_tree(tree_node *node) {
 
     printf("Node '%c' was created and has pid '%d'\n\n", node->name, getpid());
-    fflush(stdout);
+    fflush(stdout); //Prevents messages from overlapping
 
     pid_t pid;
     
@@ -285,6 +284,7 @@ void explain_wait_status(pid_t pid, int status)
     else if (WIFSTOPPED(status))
     {
         printf("Child with PID = %ld has been stopped by a signal, signo = %d\n", (long)pid, WSTOPSIG(status));
+        //exit(17);
         fflush(stdout);
     }
     else {
