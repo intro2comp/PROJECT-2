@@ -13,7 +13,7 @@ void timeoutHandler()
 {
 
     printf("Child process has been signaled\n");
-    printf("Final results will be corrupted\n");
+    printf("Results will be corrupted\n");
     printf("Exiting program\n");
 
     signal(SIGINT, SIG_DFL);
