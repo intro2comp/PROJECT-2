@@ -1,0 +1,7 @@
+A 3 B C D
+B 2 E F
+C 1 G
+D 0
+E 0
+F 0
+G 0
