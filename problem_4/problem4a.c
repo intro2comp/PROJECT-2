@@ -135,9 +135,9 @@ int getSum(Struct* nums){
     return ret;
 }
 
-void printSum(char* infoString){
+void printSum(char* dataString){
     int currentMinimum= 0 , currentMaximum = 0, currentSum= 0;
-    sscanf(infoString, "%d %d %d", &currentMinimum, &currentMaximum, &currentSum);
+    sscanf(dataString, "%d %d %d", &currentMinimum, &currentMaximum, &currentSum);
     printf("Max=%d\n", currentMaximum);
     printf("Min=%d\n", currentMinimum);
     printf("Sum=%d\n", currentSum);
