@@ -7,3 +7,4 @@ all:
 
 clean:
 	rm -f problem4a
+	rm -f problem4c
