@@ -10,4 +10,5 @@ all: problem4a problem4b problem4c
 
 clean:
 	rm -f problem4a
+	rm -f problem4b
 	rm -f problem4c
